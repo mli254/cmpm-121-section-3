@@ -10,7 +10,15 @@ export default class Play extends Phaser.Scene {
   starfield?: Phaser.GameObjects.TileSprite;
   spinner?: Phaser.GameObjects.Shape;
 
-  rotationSpeed = Phaser.Math.PI2 / 1000; // radians per millisecond
+  //rotationSpeed = Phaser.Math.PI2 / 1000; // radians per millisecond
+  moveSpeed = 0.5;
+  originX = 0;
+  originY = 0;
+  offset = 2;
+
+  playerWidth = 10;
+  playerHeight = 10;
+  playerColor = 0xd0da5b;
 
   constructor() {
     super("play");
@@ -27,40 +35,64 @@ export default class Play extends Phaser.Scene {
   }
 
   create() {
+    const playerX = (this.game.config.width as number) / this.offset;
+    const playerY =
+      (this.game.config.height as number) - this.playerHeight - this.offset;
+
     this.fire = this.#addKey("F");
     this.left = this.#addKey("LEFT");
     this.right = this.#addKey("RIGHT");
 
     this.starfield = this.add
       .tileSprite(
-        0,
-        0,
+        this.originX,
+        this.originY,
         this.game.config.width as number,
         this.game.config.height as number,
         "starfield",
       )
-      .setOrigin(0, 0);
+      .setOrigin(this.originX, this.originY);
 
-    this.spinner = this.add.rectangle(100, 100, 50, 50, 0xff0000);
+    this.spinner = this.add
+      .rectangle(
+        playerX,
+        playerY,
+        this.playerWidth,
+        this.playerHeight,
+        this.playerColor,
+      )
+      .setOrigin(this.originX, this.originY);
   }
 
   update(_timeMs: number, delta: number) {
     this.starfield!.tilePositionX -= 4;
-
-    if (this.left!.isDown) {
-      this.spinner!.rotation -= delta * this.rotationSpeed;
-    }
-    if (this.right!.isDown) {
-      this.spinner!.rotation += delta * this.rotationSpeed;
-    }
+    const playerY =
+      (this.game.config.height as number) - this.playerHeight - this.offset;
 
     if (this.fire!.isDown) {
       this.tweens.add({
         targets: this.spinner,
-        scale: { from: 1.5, to: 1 },
-        duration: 300,
-        ease: Phaser.Math.Easing.Sine.Out,
+        y: -100,
+        duration: 1000,
+        ease: Phaser.Math.Easing.Linear,
       });
+    }
+
+    if (this.left!.isDown && this.spinner!.y >= playerY) {
+      this.spinner!.x -= delta * this.moveSpeed;
+    }
+    if (this.right!.isDown && this.spinner!.y >= playerY) {
+      this.spinner!.x += delta * this.moveSpeed;
+    }
+
+    this.spawn();
+  }
+
+  spawn() {
+    if (this.spinner!.y <= 0) {
+      this.spinner!.x = (this.game.config.width as number) / 2;
+      this.spinner!.y =
+        (this.game.config.height as number) - this.spinner!.height;
     }
   }
 }
